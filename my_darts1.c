@@ -20,7 +20,8 @@ typedef struct board{
     double radius;
 } Board;
 
-const int dart_scores[20] = {6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10};
+// x軸正方向から時計回りに並べたダーツの一倍のスコア
+const int dart_scores[20] = {6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5, 20, 1, 18, 4, 13};
 
 
 // p.x, p.yには乱数を入れる
@@ -37,7 +38,6 @@ void init_point(Point *p, double stddev) {
     p->y = stddev * sqrt(-2 * log(u1)) * sin(2 * M_PI * u2);
 
     double ang = atan2(p->y, p->x); // 点pの角度(-pi ~ pi)
-    ang = -1 * ang;// x軸は右正、y軸は下正。角度を反時計回りにしたい
     if (ang < 0) {
         ang += 2 * M_PI;// x軸正方向が0となり、0-2πに
     }
