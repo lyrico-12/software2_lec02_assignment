@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <math.h>
+#include <string.h>
 #define RADIUS 20
 
 // 座標を表す. [-20,20] が描画範囲
@@ -46,28 +47,10 @@ Point my_iso_gauss_rand(double xmean, double ymean, double stddev){
 const int dart_scores[20] = {6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5, 20, 1, 18, 4, 13};
 
 
-// // p.x, p.yには乱数を入れる
-// // p.scoreに値を入れる
-// void init_point(Point *p, double stddev) {
-//     *p = my_iso_gauss_rand(0.0, 0.0, 15.0);
-
-//     double ang = atan2(p->y, p->x); // 点pの角度(-pi ~ pi)
-//     ang = -1 * ang;// x軸は右正、y軸は下正。角度を反時計回りにしたい
-//     if (ang < 0) {
-//         ang += 2 * M_PI;// x軸正方向が0となり、0-2πに
-//     }
-
-//     // i * π/10 - π/20 ~ i * π/10 + π/20
-//     // ダーツの盤面通りに角度から１倍のスコアを計算
-//     int sector = (int) ((ang + M_PI / 20) / (M_PI / 10)) % 20;
-//     p->score = dart_scores[sector];
-// }
-
-
 // ドーナツ型の扇形の重心について、扇形の中心からの距離を返す。
 // 中心角:π/10
 double center_r(double large_r, double small_r) {
-    return 2.0 * sin(M_PI / 20) * (pow(large_r, 3.0) - pow(small_r, 3.0)) / (pow(large_r, 2.0) - pow(large_r, 2.0));
+    return 40.0 * sin(M_PI / 20) * (pow(large_r, 3.0) - pow(small_r, 3.0)) / (3.0 * M_PI * (pow(large_r, 2.0) - pow(small_r, 2.0)));
 }
 
 // Sectionのcenterを作る関数
@@ -83,7 +66,7 @@ void init_section_center(Section *s){
     double cen_r = center_r(s->largeR, s->smallR);// 重心の、中心からの距離
     double x;// 重心のx座標
     double y;// 重心のy座標
-    double ang = M_PI / 20;
+    double ang = 0;
     for (int i = 0; i < 20; i++) {
         x = cen_r * cos(ang);
         y = cen_r * sin(ang);
@@ -94,8 +77,8 @@ void init_section_center(Section *s){
 
     // s->center[i] が、１倍のスコアがi点の得点領域の重心にしたい。
     for (int i = 0; i < 20; i ++) {
-        s->center[dart_scores[i]][0] = dummy[i][0];
-        s->center[dart_scores[i]][1] = dummy[i][1];        
+        s->center[dart_scores[i] - 1][0] = dummy[i][0];
+        s->center[dart_scores[i] - 1][1] = dummy[i][1];        
     }
 
 }
@@ -132,30 +115,29 @@ void init_point_aim(char input[10], Point *p, double stddev){
     if (input[0] == 'B') {
         *p = my_iso_gauss_rand(0.0, 0.0, stddev);
     } else if (input[0] == 'T') {
-        xmean = triple.center[aim_score][0];
-        ymean = triple.center[aim_score][1];
+        xmean = triple.center[aim_score - 1][0];
+        ymean = triple.center[aim_score - 1][1];
         *p = my_iso_gauss_rand(xmean, ymean, stddev);
     } else if (input[0] == 'D') {
-        xmean = dble.center[aim_score][0];
-        ymean = dble.center[aim_score][1];
+        xmean = dble.center[aim_score - 1][0];
+        ymean = dble.center[aim_score - 1][1];
         *p = my_iso_gauss_rand(xmean, ymean, stddev);
     } else if (input[0] == 'S') {
         // 内シングルか外シングルかはランダムで決める
         double random = (double)rand() / RAND_MAX;// 0-1の乱数を生成
         if (random < 0.5) {// 0.5以下だったら内シングル
-            xmean = single1.center[aim_score][0];
-            ymean = single1.center[aim_score][1];
+            xmean = single1.center[aim_score - 1][0];
+            ymean = single1.center[aim_score - 1][1];
             *p = my_iso_gauss_rand(xmean, ymean, stddev);
         } else {// 0.5以上だったら外シングル
-            xmean = single2.center[aim_score][0];
-            ymean = single2.center[aim_score][1];
+            xmean = single2.center[aim_score - 1][0];
+            ymean = single2.center[aim_score - 1][1];
             *p = my_iso_gauss_rand(xmean, ymean, stddev);
         }
     }
 
     // 実際に投げた点の１倍のスコアを計算
     double ang = atan2(p->y, p->x); // 点pの角度(-pi ~ pi)
-    ang = -1 * ang;// x軸は右正、y軸は下正。角度を反時計回りにしたい
     if (ang < 0) {
         ang += 2 * M_PI;// x軸正方向が0となり、0-2πに
     }
@@ -277,7 +259,7 @@ int main(int argc, char **argv){
 
 
         Point p;
-        init_point_aim(input, &p, 5.0);
+        init_point_aim(input, &p, 1.0);
         score += calc_score(p);
 
         my_plot_throw(&board,p,i);
