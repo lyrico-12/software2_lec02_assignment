@@ -21,11 +21,11 @@ typedef struct board{
     double radius;
 } Board;
 
-// 各得点領域の情報を持つ
+// 各得点領域の情報を持つ(Sectionの種類は内シングル、外シングル、ダブル、トリプル)
 typedef struct section{
     double smallR; // 内半径
     double largeR; // 外半径
-    double center[20][2]; // 重心の座標。_.center[i]には得点がiの場所の重心座標がある。
+    double center[20][2]; // 重心の座標。_.center[i - 1]には得点がiの場所の重心座標がある。
 } Section;
 
 // 分散が等方向一定の正規分布の乱数を生成する
@@ -108,7 +108,7 @@ void init_point_aim(char input[10], Point *p, double stddev){
     triple.largeR = 13;
     init_section_center(&triple);
 
-    // 例えばユーザの入力がT13(実際に狙う得点は39)だったら、13
+    // 例えばユーザの入力がT13(実際に狙う得点は39)だったら、aim_scoreは13
     int aim_score = atoi(input + 1);
     double xmean;
     double ymean;
@@ -219,6 +219,31 @@ void my_plot_throw(Board *b, Point p, int i) {
     }
 }
 
+// ユーザの入力が有効な入力かチェックする
+bool check_user_input(char input[10]) {
+    char c;
+    int n;
+    int pos;
+    if (input[0] == 'B' && input[1] == '\0') {
+        return true;
+    }
+
+    if (sscanf(input, "%c%d%n", &c, &n, &pos) != 2 || input[pos] != '\0') {
+        return false;
+    }
+
+    // 文字と数値の範囲をチェック
+    if (!(c == 'S' || c == 'D' || c == 'T')) {
+        return false;
+    }
+    
+    if (n < 1 || n > 20) {
+        return false;
+    }
+
+    return true;
+}
+
 // 座標を (? ?) で表示（改行なし）
 void my_print_point(Point p) {
     printf("(%f, %f)", p.x, p.y);
@@ -256,7 +281,14 @@ int main(int argc, char **argv){
     for (int i = 1 ; i <= 3 ; i++){
         printf("狙う場所を入力してください。");
         fgets(input, sizeof(input), stdin);
+        // 改行文字を取り除く
+        input[strcspn(input, "\n")] = '\0';
 
+        if (check_user_input(input) != true) {
+            printf("入力形式が間違っています。\n");
+            i--;
+            continue;
+        }
 
         Point p;
         init_point_aim(input, &p, 1.0);
