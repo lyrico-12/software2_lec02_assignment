@@ -53,7 +53,7 @@ double center_r(double large_r, double small_r) {
     return 40.0 * sin(M_PI / 20) * (pow(large_r, 3.0) - pow(small_r, 3.0)) / (3.0 * M_PI * (pow(large_r, 2.0) - pow(small_r, 2.0)));
 }
 
-// Sectionのcenterを作る関数
+// 構造体Sectionのメンバcenterを作る関数
 void init_section_center(Section *s){
     for (int i = 0; i < 20; i++) {
         for (int j = 0; j < 2; j++) {
@@ -272,11 +272,22 @@ int calc_score(Point p) {
 int main(int argc, char **argv){
     Board board;
 
+    double stddev;// 標準偏差をユーザ入力で受け付けるようにする。
+    int opt;
+    opt = getopt(argc, argv, "v:");
+    if (opt == 'v') {
+        stddev = atof(optarg);
+    } else if (opt == '?' || opt == -1) {
+        printf("-v 標準偏差 と入力してください。\n");
+        return 1;
+    }
+
     srand((unsigned int)time(NULL));
 
     my_init_board(&board);
     int score = 0;
     char input[10];
+    
     // 3回投げる
     for (int i = 1 ; i <= 3 ; i++){
         printf("狙う場所を入力してください。");
@@ -291,7 +302,7 @@ int main(int argc, char **argv){
         }
 
         Point p;
-        init_point_aim(input, &p, 1.0);
+        init_point_aim(input, &p, stddev);
         score += calc_score(p);
 
         my_plot_throw(&board,p,i);
