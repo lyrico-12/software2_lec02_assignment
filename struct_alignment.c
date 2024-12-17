@@ -33,25 +33,6 @@ int main (int argc, char**argv){
     TStudent2 s3;
     TStudent2 s_end;
   
-    /* 以下に各構造体の先頭アドレスを表示するプログラムを書く */
-    /* Hint: printf で %p フォーマットを指定する*/
-    /* 逆順に表示（s_end, s3, s2, s1, s_begin の順）*/
-    
-    printf("s_end: %p\n", &s_end);
-    printf("s3: %p\n", &s3);
-    printf("s2: %p\n", &s2);
-    printf("s1: %p\n", &s1);
-    printf("s_begin: %p\n", &s_begin);
-    printf("\n");
-    
-    
-    /* 以下には各構造体のサイズをsizeof演算子で計算し、表示する */
-    /* printf 表示には%zu を用いる*/
-    
-    printf("Student: %zu\n", sizeof(Student));
-    printf("TStudent1: %zu\n", sizeof(TStudent1));
-    printf("TStudent2: %zu\n", sizeof(TStudent2));
-    printf("\n");
 
     /*課題1*/
     printf("Student's members\n");
@@ -60,7 +41,13 @@ int main (int argc, char**argv){
     printf("s1.age: %p\n", &s1.age);
     printf("s1.height: %p\n", &s1.height);
     printf("s1.weight: %p\n", &s1.weight);
+    
+    printf("%zu\n", (uintptr_t)&s1.name - (uintptr_t)&s1.id);
+    printf("%zu\n", (uintptr_t)&s1.age - (uintptr_t)&s1.name);
+    printf("%zu\n", (uintptr_t)&s1.height - (uintptr_t)&s1.age);
+    printf("%zu\n", (uintptr_t)&s1.weight - (uintptr_t)&s1.height);
     printf("\n");
+
 
     printf("TStudent1's members\n");
     printf("s2.id: %p\n", &s2.id);
@@ -69,7 +56,14 @@ int main (int argc, char**argv){
     printf("s2.height: %p\n", &s2.height);
     printf("s2.weight: %p\n", &s2.weight);
     printf("s2.tag: %p\n", &s2.tag);
+
+    printf("%zu\n", (uintptr_t)&s2.name - (uintptr_t)&s2.id);
+    printf("%zu\n", (uintptr_t)&s2.age - (uintptr_t)&s2.name);
+    printf("%zu\n", (uintptr_t)&s2.height - (uintptr_t)&s2.age);
+    printf("%zu\n", (uintptr_t)&s2.weight - (uintptr_t)&s2.height);
+    printf("%zu\n", (uintptr_t)&s2.tag - (uintptr_t)&s2.weight);
     printf("\n");
+
     
     printf("TStudent2's members\n");
     printf("s3.tag: %p\n", &s3.tag);
@@ -78,6 +72,13 @@ int main (int argc, char**argv){
     printf("s3.age: %p\n", &s3.age);
     printf("s3.height: %p\n", &s3.height);
     printf("s3.weight: %p\n", &s3.weight);
+    
+
+    printf("%zu\n", (uintptr_t)&s3.id - (uintptr_t)&s3.tag);
+    printf("%zu\n", (uintptr_t)&s3.name - (uintptr_t)&s3.id);
+    printf("%zu\n", (uintptr_t)&s3.age - (uintptr_t)&s3.name);
+    printf("%zu\n", (uintptr_t)&s3.height - (uintptr_t)&s3.age);
+    printf("%zu\n", (uintptr_t)&s3.weight - (uintptr_t)&s3.height);
     printf("\n");
 
     return 0;
