@@ -11,7 +11,7 @@ int main(){
     printf("(%f %f)\n",h1.a, h2.a);
     printf("(%f %f)\n",h1.c, h2.c);
     printf("(%c %c)\n",h1.b, h2.b);
-    
+
     printf("%s\n", (!memcmp(&h1,&h2,sizeof(Obj)))?"true":"false");
 
     h2 = trick(h2); // h2 をいじる
@@ -20,8 +20,17 @@ int main(){
     printf("(%f %f)\n",h1.a, h2.a);
     printf("(%f %f)\n",h1.c, h2.c);
     printf("(%c %c)\n",h1.b, h2.b);
-    
+
+    printf("%s\n", (!memcmp(&h1.a,&h2.a,8))?"true":"false");
+    printf("%s\n", (!memcmp(&h1.b,&h2.b,4))?"true":"false");
+    printf("%s\n", (!memcmp(&h1.c,&h2.c,8))?"true":"false");
     printf("%s\n", (!memcmp(&h1,&h2,sizeof(Obj)))?"true":"false");
+
+    char *p_1 = &h1.b;
+    char *p_2 = &h2.b;
+    for (int i = 0; i < 3; i++) {
+        printf("%c, %c\n", *(p_1 + i + 1), *(p_2 + i));
+    }
     
 
     return 0;
