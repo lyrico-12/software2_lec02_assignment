@@ -5,7 +5,11 @@
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
+#include <ctype.h>
 #define RADIUS 20
+#define RESET "\x1b[0m"
+#define RED "\x1b[31m"
+#define GREEN "\x1b[32m"
 
 // 座標を表す. [-20,20] が描画範囲
 typedef struct point{
@@ -28,6 +32,111 @@ typedef struct section{
     double center[20][2]; // 重心の座標。_.center[i - 1]には得点がiの場所の重心座標がある。
 } Section;
 
+// x軸正方向から時計回りに並べたダーツの一倍のスコア
+const int dart_scores[20] = {6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5, 20, 1, 18, 4, 13};
+
+// 分散が等方向一定の正規分布の乱数を生成する
+Point my_iso_gauss_rand(double xmean, double ymean, double stddev);
+
+
+// ドーナツ型の扇形の重心について、扇形の中心からの距離を返す。
+// 中心角:π/10
+double center_r(double large_r, double small_r);
+
+// 構造体Sectionのメンバcenterに値を入れる関数
+void init_section_center(Section *s);
+
+
+// ユーザが狙った場所を中心とした乱数を生成。
+// p.xとp.yに値を代入
+// p.scoreにも値を代入
+void init_point_aim(char input[10], Point *p, double stddev);
+
+size_t my_get_board_height(Board *b);
+
+size_t my_get_board_width(Board *b);
+
+// 初期化して円を表示する
+void my_init_board(Board *b);
+
+// 盤面を表示
+void my_print_board(Board *b);
+
+// 座標が描画領域ならtrueを返す
+bool my_is_in_board(Board *b, Point p);
+
+// 座標が有効（得点圏内）ならtrueを返す
+bool my_is_valid_point(Board *b, Point p);
+
+// i回目 (1-3) が盤面内なら数字でプロット
+void my_plot_throw(Board *b, Point p, int i);
+
+// ユーザの入力が有効な入力かチェックする
+bool check_user_input(char input[10]);
+
+// 座標を (? ?) で表示（改行なし）
+void my_print_point(Point p);
+
+// 中心からの距離に応じてスコア計算
+int calc_score(Point p);
+
+// 入力の経過時間によって標準偏差の値を変える
+double put_stddev(double elasped_time);
+
+
+int main(int argc, char **argv){
+    Board board;
+
+    double stddev;// 標準偏差をユーザ入力で受け付けるようにする。
+
+    srand((unsigned int)time(NULL));
+
+    my_init_board(&board);
+    int score = 0;
+    char input[10];
+
+    struct timespec start, end;
+    
+    // 3回投げる
+    for (int i = 1 ; i <= 3 ; i++){
+        printf("狙う場所を入力してください。");
+
+        // 入力にかかる時間を計測する
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
+        fgets(input, sizeof(input), stdin);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        // 改行文字を取り除く
+        input[strcspn(input, "\n")] = '\0';
+
+        if (check_user_input(input) != true) {
+            printf("入力形式が間違っています。\n");
+            i--;
+            continue;
+        }
+
+        // 入力時間(秒単位)
+        double elapsed_time = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;
+        stddev = put_stddev(elapsed_time);
+        printf("elasped_time: %f, stddev: %f\n", elapsed_time, stddev);
+
+        Point p;
+        init_point_aim(input, &p, stddev);
+        score += calc_score(p);
+
+        my_plot_throw(&board,p,i);
+        my_print_board(&board);
+        printf("-------\n");
+        my_print_point(p);
+        if (!my_is_valid_point(&board, p)) printf(" miss!");
+        printf("\n");
+        printf("Your score is %d\n", score);
+        sleep(1);
+    }
+    return 0;
+}
+
+
 // 分散が等方向一定の正規分布の乱数を生成する
 Point my_iso_gauss_rand(double xmean, double ymean, double stddev){
     Point mu;
@@ -42,9 +151,6 @@ Point my_iso_gauss_rand(double xmean, double ymean, double stddev){
     mu.score = 0;
     return mu;
 }
-
-// x軸正方向から時計回りに並べたダーツの一倍のスコア
-const int dart_scores[20] = {6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5, 20, 1, 18, 4, 13};
 
 
 // ドーナツ型の扇形の重心について、扇形の中心からの距離を返す。
@@ -172,7 +278,13 @@ void my_init_board(Board *b) {
 
             //distは円の中心との距離
             double dist = (double)(h - b->radius) * (h - b->radius) + (double)(w - 2 * b->radius) * (w - 2 * b->radius) / 4;
-            if ( dist < b->radius * b->radius + 8 && dist > b->radius * b->radius - 8) {
+            if ( dist < b->radius * b->radius + 8 && dist > b->radius * b->radius - 8) { // 盤面の一番外側
+                b->space[h][w] = '+';
+            } else if (dist < 11.0 * 11.0 + 6 && dist > 11.0 * 11.0 - 6) {// トリプルの内円
+                b->space[h][w] = '+';
+            } else if (dist < 13.0 * 13.0 + 6 && dist > 13.0 * 13.0 - 6) {// トリプルの外円
+                b->space[h][w] = '+';
+            } else if (dist < 18.0 * 18.0 + 8 && dist > 18.0 * 18.0 - 8) {// ダブルの内円
                 b->space[h][w] = '+';
             }
         }
@@ -186,9 +298,29 @@ void my_init_board(Board *b) {
 // 盤面を表示
 void my_print_board(Board *b) {
     int height = my_get_board_height(b);
+    int width = my_get_board_width(b);
 
     for (int h = 0; h < height; h++) {
-        printf("%s", b->space[h]);
+        for (int w = 0; w < width; w++) {
+            double dist = (double)(h - b->radius) * (h - b->radius) + (double)(w - 2 * b->radius) * (w - 2 * b->radius) / 4;
+            
+            if ((dist < 11.0 * 11.0 + 6 && dist > 11.0 * 11.0 - 6) || (dist < 13.0 * 13.0 + 6 && dist > 13.0 * 13.0 - 6)) {// トリプルは赤
+                if (!isdigit((int)b->space[h][w])) {
+                    printf(RED"%c"RESET, b->space[h][w]);
+                } else {
+                    printf("%c", b->space[h][w]);
+                }
+                
+            } else if ((dist < 18.0 * 18.0 + 8 && dist > 18.0 * 18.0 - 8) || (dist < b->radius * b->radius + 8 && dist > b->radius * b->radius - 8)) {// ダブルは緑
+                if (!isdigit((int)b->space[h][w])) {
+                    printf(GREEN"%c"RESET, b->space[h][w]);
+                } else {
+                    printf("%c", b->space[h][w]);
+                }
+            } else {// それ以外なら色つけない
+                printf("%c", b->space[h][w]);
+            }
+        }
     }
 }
 
@@ -267,69 +399,19 @@ int calc_score(Point p) {
     }
 }
 
+// 入力の経過時間によって標準偏差の値を変える
 double put_stddev(double elasped_time) {
-    if (elasped_time <= 1) {
+    if (elasped_time <= 1.0) {
         return 1.0;
-    } else if (elasped_time <= 2) {
+    } else if (elasped_time <= 2.0) {
         return 2.0;
-    } else if (elasped_time <= 3) {
+    } else if (elasped_time <= 3.0) {
         return 3.0;
-    } else if (elasped_time <= 4) {
+    } else if (elasped_time <= 4.0) {
         return 4.0;
-    } else if (elasped_time <= 5) {
+    } else if (elasped_time <= 5.0) {
         return 5.0;
     } else {
         return 6.0;
     }
-}
-
-
-int main(int argc, char **argv){
-    Board board;
-
-    double stddev;// 標準偏差をユーザ入力で受け付けるようにする。
-
-    srand((unsigned int)time(NULL));
-
-    my_init_board(&board);
-    int score = 0;
-    char input[10];
-
-    struct timespec start, end;
-    
-    // 3回投げる
-    for (int i = 1 ; i <= 3 ; i++){
-        printf("狙う場所を入力してください。");
-        clock_gettime(CLOCK_MONOTONIC, &start);
-
-        fgets(input, sizeof(input), stdin);
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        // 改行文字を取り除く
-        input[strcspn(input, "\n")] = '\0';
-
-        if (check_user_input(input) != true) {
-            printf("入力形式が間違っています。\n");
-            i--;
-            continue;
-        }
-
-        // 入力時間(秒単位)
-        double elapsed_time = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;
-        stddev = put_stddev(elapsed_time);
-        printf("elasped_time: %f, stddev: %f\n", elapsed_time, stddev);
-
-        Point p;
-        init_point_aim(input, &p, stddev);
-        score += calc_score(p);
-
-        my_plot_throw(&board,p,i);
-        my_print_board(&board);
-        printf("-------\n");
-        my_print_point(p);
-        if (!my_is_valid_point(&board, p)) printf(" miss!");
-        printf("\n");
-        printf("Your score is %d\n", score);
-        sleep(1);
-    }
-    return 0;
 }
