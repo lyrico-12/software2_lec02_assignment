@@ -119,20 +119,6 @@ void my_plot_throw(Board *b, Point p, int i) {
     }
 }
 
-// // 分散が等方向一定の正規分布の乱数を生成する
-// Point my_iso_gauss_rand(Point mu, double stddev){
-//     double u1;
-//     double u2;
-    
-//     u1 = (double) rand() / RAND_MAX;
-//     u2 = (double) rand() / RAND_MAX;
-
-//     mu.x = stddev * sqrt(-2 * log(u1)) * cos(2 * M_PI * u2);
-//     mu.y = stddev * sqrt(-2 * log(u1)) * sin(2 * M_PI * u2);
-
-//     return mu;
-// }
-
 // 座標を (? ?) で表示（改行なし）
 void my_print_point(Point p) {
     printf("(%f, %f)", p.x, p.y);
