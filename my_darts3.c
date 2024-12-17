@@ -69,7 +69,7 @@ bool my_is_in_board(Board *b, Point p);
 bool my_is_valid_point(Board *b, Point p);
 
 // i回目 (1-3) が盤面内なら数字でプロット
-void my_plot_throw(Board *b, Point p, int i);
+void my_plot_throw(Board *b, Point p);
 
 // ユーザの入力が有効な入力かチェックする
 bool check_user_input(char input[10]);
@@ -92,13 +92,37 @@ int main(int argc, char **argv){
     srand((unsigned int)time(NULL));
 
     my_init_board(&board);
-    int score = 0;
+
+    int score; // 最初の持ち点をユーザ入力で受け付ける
+    int opt;
+    opt = getopt(argc, argv, "a:");
+    
+    if(opt == 'a') {
+        if (!isdigit(optarg[0])) {
+            printf("-a [3, 5, 7, 9, 11, 15のいづれかの数字] と入力してください。\n");
+            return 1;
+        } else {
+            score = atoi(optarg);
+            if (!(score == 3 || score == 5 || score == 7 || score == 9 || score == 11 || score == 15)) {
+                printf("-a [3, 5, 7, 9, 11, 15のいづれかの数字] と入力してください。\n");
+                return 1;
+            }
+            score = 100 * score + 1;// 01ルール
+            printf(RED"Rule : %d\n"RESET, score);
+        }
+
+    } else if (opt == '?' || opt == -1) {
+        printf("-a [3, 5, 7, 9, 11, 15のいづれかの数字] と入力してください。\n");
+        return 1;
+    }
+
     char input[10];
 
     struct timespec start, end;
     
-    // 3回投げる
-    for (int i = 1 ; i <= 3 ; i++){
+    int i = 1; // 何投目なのか
+    // 301ルール
+    while (score != 0){
         printf("狙う場所を入力してください。");
 
         // 入力にかかる時間を計測する
@@ -122,16 +146,26 @@ int main(int argc, char **argv){
 
         Point p;
         init_point_aim(input, &p, stddev);
-        score += calc_score(p);
+        score -= calc_score(p);
 
-        my_plot_throw(&board,p,i);
+        if (score < 0) { // もしスコアが負になったら一つ前のスコアに戻す。
+            score += calc_score(p);
+        }
+
+        my_plot_throw(&board,p);
         my_print_board(&board);
         printf("-------\n");
         my_print_point(p);
         if (!my_is_valid_point(&board, p)) printf(" miss!");
         printf("\n");
         printf("Your score is %d\n", score);
+        if (score == 0) {
+            printf("End! Your total num of throw: %d.\n", i);
+        }
+        printf("\n");
         sleep(1);
+
+        i++;
     }
     return 0;
 }
@@ -344,8 +378,8 @@ bool my_is_valid_point(Board *b, Point p) {
 }
 
 // i回目 (1-3) が盤面内なら数字でプロット
-void my_plot_throw(Board *b, Point p, int i) {
-    char n = (char) i + 48;
+void my_plot_throw(Board *b, Point p) {
+    char n = '*';
     if (my_is_in_board(b, p)) {
         b->space[(int)p.y + (int)b->radius][(int)p.x * 2 + (int)b->radius * 2] = n;
     }
